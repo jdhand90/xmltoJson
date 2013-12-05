@@ -1,0 +1,42 @@
+<h1>Main#home</h1>
+
+<% xml = File.open(File.dirname(__FILE__) + "/Tritainium.xml", "r").read %>
+<% json = Hash.from_xml(xml).to_json %>
+<% regions = {"name" => "regions", "children" => Array.new} %>
+<% regionsHash = Hash.new %>
+<% stationHash = Hash.new %>
+<% hash = JSON.parse(json) %>
+<% hash['evec_api']["quicklook"]["sell_orders"]["order"].each do |order| 
+	 sName = order["station_name"].split(" ")[0] 
+	if stationHash[sName] == nil
+		stationHash[sName] = {"name" => sName, "buyOrders" => Array.new, "sellOrders" => Array.new}	
+	end
+	orderHash = {"price" => order["price"], "remaining" => order['vol_remain'], "time" => order["reported_time"]}
+	stationHash[sName]["sellOrders"].push(orderHash);	
+	if regionsHash[order["region"]] == nil
+		regionsHash[order["region"]] = {"name" => order["region"], "children" => Array.new}
+	end
+	regionsHash[order["region"]]["children"] = Array.new
+	regionsHash[order["region"]]["children"].push(stationHash[sName])
+ end  %>
+ 
+ <% hash['evec_api']["quicklook"]["buy_orders"]["order"].each do |order| 
+	 sName = order["station_name"].split(" ")[0] 
+	if stationHash[sName] == nil
+		stationHash[sName] = {"name" => sName, "buyOrders" => Array.new, "sellOrders" => Array.new}		
+	end
+	orderHash = {"price" => order["price"], "remaining" => order['vol_remain'], "time" => order["reported_time"]}
+	stationHash[sName]["buyOrders"].push(orderHash);
+	if regionsHash[order["region"]] == nil
+		regionsHash[order["region"]] = {"name" => order["region"], "children" => Array.new}
+	end
+	regionsHash[order["region"]]["children"] = Array.new
+	
+	regionsHash[order["region"]]["children"].push(stationHash[sName])
+ end  %>
+
+<% regionsHash.each do |key, value| %> 
+	<% regions["children"].push(value) %>
+<%end%>
+
+<%= regions.to_json %>
